@@ -226,7 +226,7 @@ The system uses a **multi-agent orchestration pattern** where specialized agents
 1. User uploads DOCX file via `/api/upload`
 2. Extract text using `mammoth.extractRawText()`
 3. DetectionAgent analyzes text to find placeholders
-4. OpenAI generates friendly greeting mentioning first placeholder
+4. Google Gemini generates friendly greeting mentioning first placeholder
 5. Session created and stored in memory
 6. Session ID returned to client
 
@@ -445,7 +445,6 @@ Extensive console logging throughout for debugging:
 
 - Node.js 20+
 - Google AI API key (for Gemini)
-- OpenAI API key (for greetings)
 
 ### Installation
 
@@ -459,7 +458,6 @@ Create `.env.local`:
 
 ```
 GOOGLE_AI_API_KEY=your_google_api_key
-OPENAI_API_KEY=your_openai_api_key
 ```
 
 ### Development

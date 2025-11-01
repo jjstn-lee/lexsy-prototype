@@ -5,10 +5,15 @@ import mammoth from 'mammoth';
 import { v4 as uuidv4 } from 'uuid';
 import { DetectionAgent } from '@/lib/agents/DetectionAgent';
 import { saveSession } from '@/lib/documentStore';
-import OpenAI from 'openai';
-import { Placeholder, PlaceholderDetected } from '@/lib/types';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import { PlaceholderDetected } from '@/lib/types';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const model = new ChatGoogleGenerativeAI({
+  model: "gemini-2.5-flash",
+  temperature: 0.7,
+  apiKey: process.env.GOOGLE_AI_API_KEY,
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,22 +32,14 @@ export async function POST(request: NextRequest) {
 
     const detectionAgent = new DetectionAgent();
     const placeholders = await detectionAgent.detect(text);
-    const greeting = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a helpful legal assistant. Generate a brief, friendly greeting for a user who just uploaded a legal document."
-        },
-        {
-          role: "user",
-          content: `User uploaded: ${file.name}. It has ${placeholders.length} fields to fill. Generate a warm, professional greeting (2-3 sentences) and mention the first field: "${placeholders[0]?.label}"`
-        }
-      ],
-      temperature: 0.7,
-    });
-
-    const greetingMessage = greeting.choices[0].message.content || 
+    
+    const messages = [
+      new SystemMessage("You are a helpful legal assistant. Generate a brief, friendly greeting for a user who just uploaded a legal document."),
+      new HumanMessage(`User uploaded: ${file.name}. It has ${placeholders.length} fields to fill. Generate a warm, professional greeting (2-3 sentences) and mention the first field: "${placeholders[0]?.label}"`)
+    ];
+    
+    const greetingResponse = await model.invoke(messages);
+    const greetingMessage = greetingResponse.content?.toString() || 
       `Thank you for uploading "${file.name}". I found ${placeholders.length} field${placeholders.length !== 1 ? 's' : ''} that need to be filled. Let's get started!`;
     const session = {
       id: uuidv4(),

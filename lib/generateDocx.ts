@@ -411,12 +411,11 @@ export async function generateFilledDocument(
     console.log('[generateDocx] Step 6: Generating new DOCX buffer...');
     console.log(`[generateDocx] ZIP files before generation: ${Object.keys(zip.files).length}`);
     
-    const outputBuffer = zip.generate({
-      type: 'nodebuffer',
+    const outputBuffer = Buffer.from(zip.generate({
+      type: 'uint8array',
       compression: 'DEFLATE',
-      compressionOptions: { level: 6 },
-      streamFiles: false
-    });
+      compressionOptions: { level: 6 }
+    }));
     
     console.log(`[generateDocx] Generated buffer size: ${outputBuffer.length} bytes`);
     console.log(`[generateDocx] Original buffer size: ${originalBuffer.length} bytes`);
@@ -462,8 +461,9 @@ export async function generateFilledDocument(
       filledText = filledText.replace(pattern, value);
     }
   }
-    const { Document, Packer, Paragraph, TextRun } = await import('docx');
-    
+  
+  const { Document, Packer, Paragraph, TextRun } = await import('docx');
+  
   const paragraphs = filledText
     .split(/\n\s*\n/)
     .filter((p) => p.trim().length > 0)
@@ -506,5 +506,6 @@ export async function generateFilledDocument(
   });
 
   return await Packer.toBuffer(doc);
+  }
 }
 

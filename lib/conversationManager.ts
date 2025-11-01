@@ -1,9 +1,7 @@
-// lib/conversationManagerLangChain.ts
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { DocumentSession } from "./types";
 
-// JSON schema for placeholder extraction
 const PlaceholderResponseSchema = {
   type: "object" as const,
   description: "Structured response for extracted placeholders",
@@ -78,7 +76,6 @@ Guidelines:
     console.log('[ConversationManager] Constructor complete');
   }
 
-  // generate the next question for unfilled placeholder
   async getNextQuestion(): Promise<string> {
     console.log('[ConversationManager.getNextQuestion] Starting');
     console.log('[ConversationManager.getNextQuestion] Current session responses:', JSON.stringify(this.session.responses, null, 2));
@@ -118,7 +115,6 @@ Guidelines:
       return 'Unknown';
     }));
 
-    // include questionHistory to maintain conversation context (system message + previous Q&A)
     const messages = [
       ...this.questionHistory,
       new HumanMessage(prompt)
@@ -164,7 +160,6 @@ Guidelines:
     return question;
   }
 
-  /** process user response: extract values + acknowledgment ONLY if new */
   async processUserResponse(userMessage: string): Promise<{
     understood?: boolean;
     extractedValues?: Record<string, string>;
@@ -184,7 +179,6 @@ Guidelines:
 
     const extractionPrompt = `
     Analyze the user's response and extract values ONLY for unfilled placeholders.
-    Do NOT ask new questions or combine acknowledgment with other instructions.
     Unfilled placeholders:
     ${JSON.stringify(unfilledPlaceholders, null, 2)}
     User said: "${userMessage}"
@@ -232,7 +226,6 @@ Guidelines:
       }
     }
 
-    // Define a synonym map for common variations (optional)
     const synonymMap: Record<string, string> = {
       "company": "company_name",
       "company_name": "company_name",
@@ -240,7 +233,6 @@ Guidelines:
       "founder": "founder",
     };
 
-    // only update session with truly new values
     const newKeys = Object.keys(extractedValuesRecord).filter(
       k => !(this.session.responses[k]?.trim())
     );
@@ -249,7 +241,6 @@ Guidelines:
       for (const key of newKeys) {
         const extractedValue = extractedValuesRecord[key];
 
-        // normalize Gemini's key, match against placeholder keys and labels
         const lowerKey = key.toLowerCase().trim();
         const mappedKey = synonymMap[lowerKey] ?? lowerKey.replace(/\s+/g, "_");
 
@@ -267,7 +258,6 @@ Guidelines:
           this.session.responses[matchingPlaceholder.key] = extractedValue;
           console.log(`[Mapping] Gemini key "${key}" → placeholder ID "${matchingPlaceholder.key}"`);
         } else {
-          // fallback: store under raw key if no match
           this.session.responses[key] = extractedValue;
           console.warn(`[Mapping] No matching placeholder for Gemini key "${key}", stored as raw key`);
         }

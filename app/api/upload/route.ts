@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 import { v4 as uuidv4 } from 'uuid';
-import { detectPlaceholders } from '@/lib/detectPlaceholders';
+import { DetectionAgent } from '@/lib/agents/DetectionAgent';
 import { saveSession } from '@/lib/documentStore';
 import OpenAI from 'openai';
 import { Placeholder, PlaceholderDetected } from '@/lib/types';
@@ -25,10 +25,8 @@ export async function POST(request: NextRequest) {
     const result = await mammoth.extractRawText({ buffer });
     const text = result.value;
 
-    // LLM-powered placeholder detection
-    const placeholders = await detectPlaceholders(text);
-
-    // LLM generates initial greeting
+    const detectionAgent = new DetectionAgent();
+    const placeholders = await detectionAgent.detect(text);
     const greeting = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -46,16 +44,15 @@ export async function POST(request: NextRequest) {
 
     const greetingMessage = greeting.choices[0].message.content || 
       `Thank you for uploading "${file.name}". I found ${placeholders.length} field${placeholders.length !== 1 ? 's' : ''} that need to be filled. Let's get started!`;
-
-    // Create session
     const session = {
       id: uuidv4(),
       fileName: file.name,
       originalText: text,
-      originalBuffer: Buffer.from(arrayBuffer), // Store original for regeneration
-      placeholders: placeholders, // Save detected placeholders to session
+      originalBuffer: Buffer.from(arrayBuffer),
+      placeholders: placeholders,
       currentPlaceholderIndex: 0,
       responses: {} as Record<string, string>,
+      skippedPlaceholders: [] as string[],
       createdAt: new Date(),
     };
 
@@ -71,16 +68,16 @@ export async function POST(request: NextRequest) {
     fileName: session.fileName,
     originalText: session.originalText,
     placeholders: placeholders.map((p: PlaceholderDetected) => ({
-        key: p.key,
+        id: p.key,
         name: p.label,
         type: p.type,
         required: p.required,
         description: p.description || "",
-        value: "",      // empty initially
-        filled: false  // track if the placeholder has been filled
+        value: "",
+        filled: false
     })),
     uploadedAt: session.createdAt,
-    completed: false,       // document is not yet completed
+    completed: false,
     message: greetingMessage
     });
 

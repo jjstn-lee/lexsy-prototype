@@ -10,6 +10,7 @@ import { PlaceholderCard } from "@/components/PlaceholderCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
@@ -44,7 +45,6 @@ export function ChatInterface() {
 
       const uploadedDoc: DocumentState = await response.json();
       
-      // Convert date strings back to Date objects
       uploadedDoc.uploadedAt = new Date(uploadedDoc.uploadedAt);
       uploadedDoc.placeholders.forEach(p => {
         if (p.value) p.value = p.value;
@@ -52,7 +52,6 @@ export function ChatInterface() {
 
       console.log('[FRONTEND UPLOAD] Setting document with id:', uploadedDoc.id);
 
-      // **Use uploadedDoc directly instead of reading from state**
       setDocument(uploadedDoc);
 
       const firstPlaceholder = uploadedDoc.placeholders.find(p => !p.filled) || null;
@@ -124,7 +123,6 @@ export function ChatInterface() {
 
       const data = await response.json();
 
-      // **Use functional state updates to avoid stale 'document'**
       if (data.isComplete) {
         setDocument((prev) => prev ? { ...prev, completed: true } : prev);
         toast.success("All placeholders filled! You can download the document.");
@@ -136,13 +134,11 @@ export function ChatInterface() {
 
           const updatedPlaceholders = prev.placeholders.map((placeholder) => {
             const responseValue = data.currentResponses[placeholder.id];
-            if (responseValue !== undefined) {
+            if (responseValue !== undefined && responseValue !== null && responseValue.trim() !== '') {
               return { ...placeholder, value: responseValue, filled: true };
             }
             return placeholder;
           });
-
-          // Update current placeholder to next unfilled one
           const nextUnfilled = updatedPlaceholders.find((p) => !p.filled) || null;
           setCurrentPlaceholder(nextUnfilled);
 
@@ -207,24 +203,43 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-1">
+    <div className="flex flex-1 overflow-hidden">
       {/* Left Panel (Chat) */}
-      <div className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <ScrollArea className="flex-1 overflow-hidden">
           <div className="space-y-0">
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} />
             ))}
             {!document && !isProcessing && (
               <div className="p-6">
-                <DocumentUpload onUpload={handleUpload} />
+                <DocumentUpload onUpload={handleUpload} disabled={false} />
+              </div>
+            )}
+            {isProcessing && !document && (
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                  <div className="relative rounded-full bg-primary/10 p-6">
+                    <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                  </div>
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-semibold">Processing Document</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Analyzing your document and detecting placeholders. This may take a few moments...
+                  </p>
+                </div>
+                <div className="w-64 h-1 bg-secondary rounded-full overflow-hidden mt-4">
+                  <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                </div>
               </div>
             )}
           </div>
         </ScrollArea>
 
         {/* Input */}
-        <div className="border-t p-4">
+        <div className="border-t p-4 flex-shrink-0">
           <ChatInput
             onSend={handleSendMessage}
             disabled={isProcessing || !document}
@@ -237,8 +252,8 @@ export function ChatInterface() {
       {document && (
         <>
           <Separator orientation="vertical" />
-          <aside className="w-96 border-l">
-            <ScrollArea className="h-full">
+          <aside className="w-96 border-l flex flex-col h-full overflow-hidden flex-shrink-0">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="p-6 space-y-6">
                 <DocumentPreview document={document} onDownload={handleDownload} />
 

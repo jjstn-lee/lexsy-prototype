@@ -39,7 +39,6 @@ export async function GET(
       );
     }
 
-    // Check if all placeholders are filled
     const allFilled = session.placeholders.every(
       (p) => session.responses[p.key]?.trim()
     );
@@ -51,13 +50,12 @@ export async function GET(
       );
     }
 
-    // generate filled document
     const buffer = await generateFilledDocument(
-      session.originalText,
-      session.responses
+      session.originalBuffer,
+      session.responses,
+      session.placeholders,
+      session.originalText
     );
-
-    // create response with appropriate headers
     return new NextResponse(bufferToArrayBuffer(buffer), {
       headers: {
         "Content-Type":
@@ -75,7 +73,6 @@ export async function GET(
   }
 }
 
-// boilerplate
 function bufferToArrayBuffer(buffer: Buffer): ArrayBuffer {
   const arrayBuffer = new ArrayBuffer(buffer.length);
   const view = new Uint8Array(arrayBuffer);

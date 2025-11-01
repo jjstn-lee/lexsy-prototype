@@ -48,11 +48,6 @@ export const DocumentPreview = ({ document, onDownload }: DocumentPreviewProps) 
         </div>
       </div>
 
-      <div className="bg-muted/50 rounded-lg p-4 max-h-96 overflow-y-auto">
-        <pre className="text-sm whitespace-pre-wrap font-mono">
-          {document.templateText || "Document content will appear here..."}
-        </pre>
-      </div>
     </Card>
   );
 };

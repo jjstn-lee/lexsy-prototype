@@ -22,7 +22,6 @@ export interface DocumentState {
   completed: boolean;
 }
 
-// New types for LLM-powered system
 export interface PlaceholderDetected {
   key: string;
   label: string;
@@ -40,6 +39,7 @@ export interface DocumentSession {
   placeholders: PlaceholderDetected[];
   currentPlaceholderIndex: number;
   responses: Record<string, string>;
+  skippedPlaceholders: string[]; // Track placeholders that have been skipped
   createdAt: Date;
 }
 
